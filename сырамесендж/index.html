@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Сырамесендж 🧀</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#FFC93C">
+<link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3050/3050249.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<style>
+  :root {
+    --cheese: #FFC93C;
+    --cheese-dark: #E0A800;
+    --cheese-light: #FFF3C4;
+    --bg: #FFFDF5;
+    --panel: #FFFFFF;
+    --text: #3A2E00;
+    --muted: #8A7A45;
+    --bubble-me: #FFE28A;
+    --bubble-other: #F1F1F1;
+    --border: #F0E2B0;
+    --shadow: 0 6px 20px rgba(200,160,0,0.15);
+  }
+  body.dark {
+    --bg: #1E1B12;
+    --panel: #2A2618;
+    --text: #F5E9C8;
+    --muted: #B8A97A;
+    --bubble-me: #6B5A1E;
+    --bubble-other: #3A3524;
+    --border: #443C22;
+    --cheese-light: #3A3420;
+    --shadow: 0 6px 20px rgba(0,0,0,0.4);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; transition: background .3s, color .3s; }
+  .hidden { display: none !important; }
+
+  #auth { height: 100vh; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at 30% 20%, var(--cheese-light), var(--bg) 70%); }
+  .auth-card { background: var(--panel); padding: 40px 30px; border-radius: 24px; box-shadow: var(--shadow); text-align: center; width: 360px; border: 2px solid var(--border); }
+  .auth-card h1 { font-size: 32px; margin-bottom: 6px; color: var(--cheese-dark); }
+  .auth-card .sub { color: var(--muted); margin-bottom: 24px; font-size: 14px; }
+  .auth-card input { width: 100%; padding: 14px 16px; border-radius: 14px; border: 2px solid var(--border); background: var(--bg); color: var(--text); font-size: 16px; outline: none; }
+  .auth-card input:focus { border-color: var(--cheese); }
+  .auth-card button { width: 100%; margin-top: 14px; padding: 14px; border: none; border-radius: 14px; background: var(--cheese); color: #3A2E00; font-weight: 700; font-size: 16px; cursor: pointer; }
+  #authError { color: #D9534F; font-size: 13px; margin-top: 10px; min-height: 16px; }
+
+  #app { display: flex; height: 100vh; }
+  .sidebar { width: 320px; background: var(--panel); border-right: 2px solid var(--border); display: flex; flex-direction: column; }
+  .brand { padding: 16px 18px; font-weight: 800; font-size: 20px; color: var(--cheese-dark); border-bottom: 2px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+  .brand .me { font-size: 12px; font-weight: 500; color: var(--muted); background: var(--cheese-light); padding: 4px 10px; border-radius: 20px; }
+  .list { flex: 1; overflow-y: auto; padding: 10px; }
+  .list-title { font-size: 12px; color: var(--muted); font-weight: 700; text-transform: uppercase; margin: 10px 0 5px 10px; }
+  .list-item { padding: 12px 14px; border-radius: 12px; cursor: pointer; margin-bottom: 4px; display: flex; align-items: center; gap: 10px; transition: background .15s; }
+  .list-item:hover { background: var(--cheese-light); }
+  .list-item.active { background: var(--cheese-light); border: 1px solid var(--cheese); }
+  .avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--cheese); color: #3A2E00; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+  .actions { padding: 10px; border-top: 2px solid var(--border); display: flex; gap: 8px; flex-wrap: wrap; }
+  .actions button { flex: 1; padding: 10px; border: none; border-radius: 12px; background: var(--cheese); color: #3A2E00; font-weight: 700; font-size: 13px; cursor: pointer; }
+  .actions button.ghost { background: transparent; border: 2px solid var(--border); color: var(--text); }
+
+  .chat { flex: 1; display: flex; flex-direction: column; background: var(--bg); }
+  .chat-header { padding: 14px 20px; background: var(--panel); border-bottom: 2px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+  .chat-header h2 { font-size: 17px; color: var(--cheese-dark); }
+  .theme-toggle { background: var(--cheese-light); border: none; padding: 8px 12px; border-radius: 12px; cursor: pointer; font-size: 16px; color: var(--text); }
+  
+  .messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+  .empty-state { margin: auto; text-align: center; color: var(--muted); }
+  .msg { max-width: 75%; padding: 10px 14px; border-radius: 16px; font-size: 14px; line-height: 1.4; word-wrap: break-word; }
+  .msg.me { align-self: flex-end; background: var(--bubble-me); border-bottom-right-radius: 4px; }
+  .msg.other { align-self: flex-start; background: var(--bubble-other); border-bottom-left-radius: 4px; }
+  .msg .meta { font-size: 10px; color: var(--muted); margin-top: 4px; text-align: right; }
+  .msg .author { font-size: 11px; font-weight: 700; color: var(--cheese-dark); margin-bottom: 2px; }
+  
+  .composer { display: flex; gap: 8px; padding: 12px 16px; background: var(--panel); border-top: 2px solid var(--border); }
+  .composer input { flex: 1; padding: 12px 16px; border-radius: 14px; border: 2px solid var(--border); background: var(--bg); color: var(--text); font-size: 15px; outline: none; }
+  .composer button { padding: 0 22px; border: none; border-radius: 14px; background: var(--cheese); color: #3A2E00; font-weight: 700; cursor: pointer; font-size: 15px; }
+  .composer button:disabled { opacity: .4; cursor: not-allowed; }
+
+  .modal-back { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; z-index: 50; }
+  .modal { background: var(--panel); border-radius: 20px; padding: 24px; width: 340px; box-shadow: var(--shadow); border: 2px solid var(--border); }
+  .modal h3 { margin-bottom: 16px; color: var(--cheese-dark); }
+  .modal input { width: 100%; padding: 12px 14px; border-radius: 12px; border: 2px solid var(--border); background: var(--bg); color: var(--text); margin-bottom: 10px; outline: none; }
+  .modal button { width: 100%; padding: 12px; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; margin-bottom: 8px; }
+  .modal .primary { background: var(--cheese); color: #3A2E00; }
+  .modal .secondary { background: transparent; border: 2px solid var(--border); color: var(--text); }
+
+  .cheese-snow { position: fixed; top: -20px; font-size: 18px; pointer-events: none; z-index: 999; animation: fall linear forwards; }
+  @keyframes fall { to { transform: translateY(105vh) rotate(360deg); opacity: 0; } }
+</style>
+</head>
+<body>
+
+<div id="auth">
+  <div class="auth-card">
+    <h1>🧀 Сырамесендж</h1>
+    <div class="sub">Настоящий мессенджер для друзей</div>
+    <input id="nickInput" placeholder="Придумай ник (латиница)" maxlength="20" autocomplete="off">
+    <button id="loginBtn">Войти</button>
+    <div id="authError"></div>
+  </div>
+</div>
+
+<div id="app" class="hidden">
+  <aside class="sidebar">
+    <div class="brand">
+      <span>🧀 Сырамесендж</span>
+      <span class="me" id="meBadge">@ник</span>
+    </div>
+    <div class="list" id="list">
+    </div>
+    <div class="actions">
+      <button id="themeBtn" class="ghost">🌙 Тема</button>
+      <button id="logoutBtn" class="ghost">🚪 Выйти</button>
+    </div>
+  </aside>
+
+  <main class="chat">
+    <div class="chat-header">
+      <div>
+        <h2 id="chatTitle">Выбери друга</h2>
+      </div>
+      <button class="theme-toggle" id="themeBtn2">🌙</button>
+    </div>
+    <div class="messages" id="messages">
+      <div class="empty-state" id="emptyState">
+        <div style="font-size:48px; margin-bottom:10px;">🧀</div>
+        <div>Твои друзья появятся здесь.<br>Напиши кому-нибудь!</div>
+      </div>
+    </div>
+    <div class="composer">
+      <input id="msgInput" placeholder="Напиши сообщение..." disabled>
+      <button id="sendBtn" disabled>➤</button>
+    </div>
+  </main>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+  import { getDatabase, ref, set, onValue, push } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAW8wrZMDnGdJu7BzTh4KuSBZhMz1Jybq",
+    authDomain: "syramesendzh.firebaseapp.com",
+    databaseURL: "https://syramesendzh-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "syramesendzh",
+    storageBucket: "syramesendzh.firebasestorage.app",
+    messagingSenderId: "761496275763",
+    appId: "1:761496275763:web:bcc61c97cf19b03e13cc46"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  const $ = id => document.getElementById(id);
+  let me = localStorage.getItem('cheese_me') || null;
+  let currentChat = null;
+  let theme = localStorage.getItem('cheese_theme') || 'light';
+  let unsubscribeMessages = null;
+  let unsubscribeFriends = null;
+
+  function toast(msg) {
+    const el = document.createElement('div');
+    el.textContent = msg;
+    el.style.cssText = `position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--cheese);color:#3A2E00;padding:12px 22px;border-radius:16px;font-weight:700;z-index:1000;box-shadow:var(--shadow);`;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 2200);
+  }
+
+  function cheeseRain() {
+    for (let i = 0; i < 20; i++) {
+      const s = document.createElement('div');
+      s.className = 'cheese-snow';
+      s.textContent = '🧀';
+      s.style.left = Math.random()*100 + 'vw';
+      s.style.animationDuration = (2 + Math.random()*2) + 's';
+      s.style.animationDelay = (Math.random()*0.5) + 's';
+      document.body.appendChild(s);
+      setTimeout(() => s.remove(), 5000);
+    }
+  }
+
+  function applyTheme() {
+    document.body.classList.toggle('dark', theme === 'dark');
+    const icon = theme === 'dark' ? '☀️' : '🌙';
+    $('themeBtn').textContent = icon + ' Тема';
+    $('themeBtn2').textContent = icon;
+  }
+
+  function toggleTheme() {
+    theme = theme === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('cheese_theme', theme);
+    applyTheme();
+  }
+
+  function checkAuth() {
+    if (me) {
+      $('auth').classList.add('hidden');
+      $('app').classList.remove('hidden');
+      $('meBadge').textContent = '@' + me;
+      loadFriends();
+    } else {
+      $('auth').classList.remove('hidden');
+      $('app').classList.add('hidden');
+    }
+  }
+
+  $('loginBtn').onclick = () => {
+    const nick = $('nickInput').value.trim();
+    if (!/^[A-Za-z0-9_]{3,20}$/.test(nick)) {
+      $('authError').textContent = 'Только латиница, цифры и _, 3–20 символов';
+      return;
+    }
+    
+    const userRef = ref(db, 'users/' + nick);
+    onValue(userRef, (snapshot) => {
+      if (snapshot.exists()) {
+        $('authError').textContent = 'Этот ник уже занят 😕';
+      } else {
+        set(userRef, { nick: nick, createdAt: Date.now() }).then(() => {
+          me = nick;
+          localStorage.setItem('cheese_me', me);
+          $('nickInput').value = '';
+          $('authError').textContent = '';
+          toast('Добро пожаловать, @' + nick + '! 🧀');
+          cheeseRain();
+          checkAuth();
+        });
+      }
+    }, { onlyOnce: true });
+  };
+
+  $('nickInput').addEventListener('keydown', e => { if (e.key === 'Enter') $('loginBtn').click(); });
+
+  $('logoutBtn').onclick = () => {
+    me = null;
+    localStorage.removeItem('cheese_me');
+    if (unsubscribeMessages) unsubscribeMessages();
+    if (unsubscribeFriends) unsubscribeFriends();
+    currentChat = null;
+    checkAuth();
+  };
+
+  function loadFriends() {
+    const usersRef = ref(db, 'users');
+    if (unsubscribeFriends) unsubscribeFriends();
+    
+    unsubscribeFriends = onValue(usersRef, (snapshot) => {
+      const users = snapshot.val() || {};
+      const list = $('list');
+      list.innerHTML = '<div class="list-title">Все пользователи</div>';
+      
+      Object.keys(users).forEach(u => {
+        if (u === me) return;
+        const div = document.createElement('div');
+        div.className = 'list-item' + (currentChat === u ? ' active' : '');
+        div.innerHTML = `<div class="avatar">${u[0].toUpperCase()}</div>
+          <div><div class="item-name">${u}</div></div>`;
+        div.onclick = () => openChat(u);
+        list.appendChild(div);
+      });
+    });
+  }
+
+  function openChat(friendNick) {
+    currentChat = friendNick;
+    $('chatTitle').textContent = '💬 ' + friendNick;
+    $('msgInput').disabled = false;
+    $('sendBtn').disabled = false;
+    $('msgInput').focus();
+    loadFriends();
+    loadMessages();
+  }
+
+  function loadMessages() {
+    if (!currentChat) return;
+    const box = $('messages');
+    box.innerHTML = '';
+    
+    const roomId = [me, currentChat].sort().join('_');
+    const chatRef = ref(db, 'chats/' + roomId);
+    
+    if (unsubscribeMessages) unsubscribeMessages();
+    
+    unsubscribeMessages = onValue(chatRef, (snapshot) => {
+      box.innerHTML = '';
+      const data = snapshot.val();
+      
+      if (!data) {
+        box.innerHTML = `<div class="empty-state"><div style="font-size:48px; margin-bottom:10px;">💬</div><div>Напиши первым!</div></div>`;
+        return;
+      }
+      
+      const messages = Object.values(data).sort((a, b) => a.ts - b.ts);
+      
+      messages.forEach(m => {
+        const isMe = m.author === me;
+        const div = document.createElement('div');
+        div.className = 'msg ' + (isMe ? 'me' : 'other');
+        
+        let html = '';
+        if (!isMe) html += `<div class="author">@${m.author}</div>`;
+        html += m.text;
+        html += `<div class="meta">${new Date(m.ts).toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'})}</div>`;
+        
+        div.innerHTML = html;
+        box.appendChild(div);
+      });
+      
+      box.scrollTop = box.scrollHeight;
+    });
+  }
+
+  $('sendBtn').onclick = () => {
+    const text = $('msgInput').value.trim();
+    if (!text || !currentChat) return;
+    
+    const roomId = [me, currentChat].sort().join('_');
+    const chatRef = ref(db, 'chats/' + roomId);
+    
+    push(chatRef, {
+      author: me,
+      text: text,
+      ts: Date.now()
+    });
+    
+    $('msgInput').value = '';
+    if (/сыр|cheese/i.test(text)) cheeseRain();
+  };
+
+  $('msgInput').addEventListener('keydown', e => { if (e.key === 'Enter') $('sendBtn').click(); });
+
+  $('themeBtn').onclick = toggleTheme;
+  $('themeBtn2').onclick = toggleTheme;
+
+  applyTheme();
+  checkAuth();
+  
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(err => console.log('SW error:', err));
+  }
+</script>
+</body>
+</html>
