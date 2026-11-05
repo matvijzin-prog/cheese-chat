@@ -1,0 +1,16 @@
+{
+  "name": "Сырамесендж",
+  "short_name": "СырЧат",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#FFFDF5",
+  "theme_color": "#FFC93C",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3050/3050249.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
