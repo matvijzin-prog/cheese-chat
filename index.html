@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Сырамесендж 🧀</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#FFC93C">
@@ -38,13 +38,13 @@
   body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; transition: background .3s, color .3s; }
   .hidden { display: none !important; }
 
-  #auth { height: 100vh; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at 30% 20%, var(--cheese-light), var(--bg) 70%); }
-  .auth-card { background: var(--panel); padding: 40px 30px; border-radius: 24px; box-shadow: var(--shadow); text-align: center; width: 360px; border: 2px solid var(--border); }
+  #auth { height: 100vh; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at 30% 20%, var(--cheese-light), var(--bg) 70%); padding: 20px; }
+  .auth-card { background: var(--panel); padding: 40px 30px; border-radius: 24px; box-shadow: var(--shadow); text-align: center; width: 360px; max-width: 100%; border: 2px solid var(--border); }
   .auth-card h1 { font-size: 32px; margin-bottom: 6px; color: var(--cheese-dark); }
   .auth-card .sub { color: var(--muted); margin-bottom: 24px; font-size: 14px; }
-  .auth-card input { width: 100%; padding: 14px 16px; border-radius: 14px; border: 2px solid var(--border); background: var(--bg); color: var(--text); font-size: 16px; outline: none; }
+  .auth-card input { width: 100%; padding: 14px 16px; border-radius: 14px; border: 2px solid var(--border); background: var(--bg); color: var(--text); font-size: 16px; outline: none; margin-bottom: 10px; }
   .auth-card input:focus { border-color: var(--cheese); }
-  .auth-card button { width: 100%; margin-top: 14px; padding: 14px; border: none; border-radius: 14px; background: var(--cheese); color: #3A2E00; font-weight: 700; font-size: 16px; cursor: pointer; }
+  .auth-card button { width: 100%; margin-top: 10px; padding: 14px; border: none; border-radius: 14px; background: var(--cheese); color: #3A2E00; font-weight: 700; font-size: 16px; cursor: pointer; }
   #authError { color: #D9534F; font-size: 13px; margin-top: 10px; min-height: 16px; }
 
   #app { display: flex; height: 100vh; }
@@ -79,16 +79,19 @@
   .composer button { padding: 0 22px; border: none; border-radius: 14px; background: var(--cheese); color: #3A2E00; font-weight: 700; cursor: pointer; font-size: 15px; }
   .composer button:disabled { opacity: .4; cursor: not-allowed; }
 
-  .modal-back { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; z-index: 50; }
-  .modal { background: var(--panel); border-radius: 20px; padding: 24px; width: 340px; box-shadow: var(--shadow); border: 2px solid var(--border); }
-  .modal h3 { margin-bottom: 16px; color: var(--cheese-dark); }
-  .modal input { width: 100%; padding: 12px 14px; border-radius: 12px; border: 2px solid var(--border); background: var(--bg); color: var(--text); margin-bottom: 10px; outline: none; }
-  .modal button { width: 100%; padding: 12px; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; margin-bottom: 8px; }
-  .modal .primary { background: var(--cheese); color: #3A2E00; }
-  .modal .secondary { background: transparent; border: 2px solid var(--border); color: var(--text); }
-
   .cheese-snow { position: fixed; top: -20px; font-size: 18px; pointer-events: none; z-index: 999; animation: fall linear forwards; }
   @keyframes fall { to { transform: translateY(105vh) rotate(360deg); opacity: 0; } }
+
+  /* МОБИЛЬНАЯ АДАПТАЦИЯ */
+  .back-btn { display: none; background: none; border: none; font-size: 20px; cursor: pointer; color: var(--cheese-dark); margin-right: 10px; }
+  
+  @media (max-width: 700px) {
+    .sidebar { width: 100%; position: absolute; z-index: 20; height: 100%; transition: transform 0.3s; }
+    .sidebar.hide { transform: translateX(-100%); }
+    .chat { width: 100%; }
+    .back-btn { display: block; }
+    .chat-header { padding: 12px; }
+  }
 </style>
 </head>
 <body>
@@ -97,20 +100,20 @@
   <div class="auth-card">
     <h1>🧀 Сырамесендж</h1>
     <div class="sub">Настоящий мессенджер для друзей</div>
-    <input id="nickInput" placeholder="Придумай ник (латиница)" maxlength="20" autocomplete="off">
+    <input id="nickInput" placeholder="Ник (латиница)" maxlength="20" autocomplete="off">
+    <input id="passInput" type="password" placeholder="Пароль (мин. 3 символа)" maxlength="20">
     <button id="loginBtn">Войти</button>
     <div id="authError"></div>
   </div>
 </div>
 
 <div id="app" class="hidden">
-  <aside class="sidebar">
+  <aside class="sidebar" id="sidebar">
     <div class="brand">
       <span>🧀 Сырамесендж</span>
       <span class="me" id="meBadge">@ник</span>
     </div>
-    <div class="list" id="list">
-    </div>
+    <div class="list" id="list"></div>
     <div class="actions">
       <button id="themeBtn" class="ghost">🌙 Тема</button>
       <button id="logoutBtn" class="ghost">🚪 Выйти</button>
@@ -119,7 +122,8 @@
 
   <main class="chat">
     <div class="chat-header">
-      <div>
+      <div style="display:flex; align-items:center;">
+        <button class="back-btn" id="backBtn">←</button>
         <h2 id="chatTitle">Выбери друга</h2>
       </div>
       <button class="theme-toggle" id="themeBtn2">🌙</button>
@@ -139,7 +143,7 @@
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-  import { getDatabase, ref, set, onValue, push } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+  import { getDatabase, ref, set, onValue, push, get, child, update } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyAW8wrZMDnGdJu7BzTh4KuSBZhMz1Jybq",
@@ -207,32 +211,57 @@
     }
   }
 
-  $('loginBtn').onclick = () => {
+  $('loginBtn').onclick = async () => {
     const nick = $('nickInput').value.trim();
+    const pass = $('passInput').value.trim();
+    
     if (!/^[A-Za-z0-9_]{3,20}$/.test(nick)) {
       $('authError').textContent = 'Только латиница, цифры и _, 3–20 символов';
       return;
     }
-    
-    const userRef = ref(db, 'users/' + nick);
-    onValue(userRef, (snapshot) => {
+    if (pass.length < 3) {
+      $('authError').textContent = 'Пароль должен быть хотя бы 3 символа';
+      return;
+    }
+
+    const dbRef = ref(db);
+    try {
+      const snapshot = await get(child(dbRef, 'users/' + nick));
+      
       if (snapshot.exists()) {
-        $('authError').textContent = 'Этот ник уже занят 😕';
-      } else {
-        set(userRef, { nick: nick, createdAt: Date.now() }).then(() => {
+        const userData = snapshot.val();
+        // ХИТРОСТЬ ДЛЯ СТАРЫХ АККАУНТОВ (у которых нет пароля)
+        if (!userData.password) {
+          // Если пароля нет, привязываем введенный пароль к аккаунту
+          await update(ref(db, 'users/' + nick), { password: pass });
           me = nick;
           localStorage.setItem('cheese_me', me);
-          $('nickInput').value = '';
-          $('authError').textContent = '';
-          toast('Добро пожаловать, @' + nick + '! 🧀');
-          cheeseRain();
+          toast('Пароль установлен! Теперь ты можешь заходить. 🧀');
           checkAuth();
-        });
+        } else if (userData.password === pass) {
+          me = nick;
+          localStorage.setItem('cheese_me', me);
+          toast('С возвращением, @' + nick + '! 🧀');
+          checkAuth();
+        } else {
+          $('authError').textContent = 'Неверный пароль 😕';
+        }
+      } else {
+        await set(ref(db, 'users/' + nick), { nick: nick, password: pass, createdAt: Date.now() });
+        me = nick;
+        localStorage.setItem('cheese_me', me);
+        toast('Добро пожаловать, @' + nick + '! 🧀');
+        cheeseRain();
+        checkAuth();
       }
-    }, { onlyOnce: true });
+    } catch (e) {
+      $('authError').textContent = 'Ошибка соединения. Проверь интернет.';
+      console.error(e);
+    }
   };
 
-  $('nickInput').addEventListener('keydown', e => { if (e.key === 'Enter') $('loginBtn').click(); });
+  $('nickInput').addEventListener('keydown', e => { if (e.key === 'Enter') $('passInput').focus(); });
+  $('passInput').addEventListener('keydown', e => { if (e.key === 'Enter') $('loginBtn').click(); });
 
   $('logoutBtn').onclick = () => {
     me = null;
@@ -240,7 +269,15 @@
     if (unsubscribeMessages) unsubscribeMessages();
     if (unsubscribeFriends) unsubscribeFriends();
     currentChat = null;
+    $('nickInput').value = '';
+    $('passInput').value = '';
+    $('authError').textContent = '';
+    $('sidebar').classList.remove('hide');
     checkAuth();
+  };
+
+  $('backBtn').onclick = () => {
+    $('sidebar').classList.remove('hide');
   };
 
   function loadFriends() {
@@ -270,6 +307,12 @@
     $('msgInput').disabled = false;
     $('sendBtn').disabled = false;
     $('msgInput').focus();
+    
+    // На телефоне скрываем список чатов
+    if (window.innerWidth <= 700) {
+      $('sidebar').classList.add('hide');
+    }
+    
     loadFriends();
     loadMessages();
   }
